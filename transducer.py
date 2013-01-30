@@ -2,13 +2,16 @@ import scipy.stats
 import numpy
 import copy
 from collections import deque
+import ipdb
 
-numpy.random.seed(1) # Fix the random number generator so we get
+# numpy.random.seed(1) # Fix the random number generator so we get
                      # reproducible results.
 
-execfile("even_process.py")
-
+# execfile("even_process.py")
 ofile = open('even.dat')
+
+# execfile("generate_coin.py")
+# ofile = open('coin.dat')
 
 seq = ofile.readline()
 
@@ -16,7 +19,7 @@ n = len(seq) # The number of time points
 
 ofile.close()
 
-L = 2 # The past to consider
+L = 3 # The past to consider
 
 num_symbols = 2 # The number of possible symbols
 
@@ -51,7 +54,7 @@ df = num_symbols - 1
 #       H1: Two distributions are *not* equal
 # at a level alpha
 
-alpha = 0.001
+alpha = 0.05
 
 # NOTE: I'm not convinced this is working. At least,
 # it doesn't seem to be working as well as I'd like it
@@ -63,7 +66,7 @@ def merge_states(state1, state2):
     #
     # Output: One list of the same form, with the histories combined and the symbol counts updated
     
-    merged_state = state1
+    merged_state = copy.copy(state1)
     
     for hist in state2[0]:
         merged_state[0].append(hist)
@@ -98,48 +101,38 @@ def chisquared_test(state1, state2):
     
     return test
 
-# for hist_ind in range(1, len(hists)):
-#     test = chisquared_test(hists[0], hists[hist_ind])
-#     
-#     if test == False:        
-#         print 'According to the chi-squared test, the two histories merge.'
-#     elif test == True:
-#         print 'According to the chi-squared test, the two histories do not merge.'
-#         
-#     print hists[0][1], hists[hist_ind][1]
+# This algorithm for merging is due to Shalizi.
 
+numpy.random.shuffle(hists) # NOTE: numpy.random.shuffle shuffles in place
 
-#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# You could do this much better. See Shalizi's pseudocode.
-#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Create a list to contain the causal states.
 
-for runthrough in range(10):
-    num_states = len(hists)
-    i = 0
-    j = 1
+states = []
 
-    while i < num_states-1:
-        while j < num_states:
-            test = chisquared_test(hists[i], hists[j])
+nhists = len(hists) # the number of histories
+
+# Move the first past into its own state
+
+states.append(hists.pop(0))
+
+# Run through each of the remaining histories and see if it belongs to
+# one of the existing states.
+
+for historyind, history in enumerate(hists):
+    nomatch = True # nomatch keeps track, for each history, whether or not we've found
+                   # a matching causal state.
+    
+    for stateind, state in enumerate(states):
+        test = chisquared_test(history, state)
         
-            if test == False:
-                new_state = merge_states(hists[i], hists[j])
-                
-                # Remove the two states from hists
-                
-                deque((list.pop(hists, k) for k in sorted([i, j], reverse=True)), maxlen=0)
-                
-                # Append the merged state to hists
-                
-                hists.append(new_state)
+        if test == False: 
+            states[stateind] = merge_states(history, state)
             
-                j = j - 1
+            nomatch = False # We've found a match, so we indicate that in nomatch
             
-                num_states = num_states - 1
-            elif test == True:
-                print 'Do not merge on {}, {}'.format(hists[i][1], hists[j][1])
+            break # We've merged, so break out of the inner for loop
         
-            j = j + 1
-        i = i + 1
-
-print hists
+    if nomatch == True:
+        states.append(history)
+    
+print states

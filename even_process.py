@@ -26,7 +26,7 @@ for ind in xrange(num_symbols-1):
     
     state_sequence[ind+1] = trans[state_sequence[ind]][symbol_sequence[ind]]
 
-ofile = open('symseq.dat', 'w')
+ofile = open('even.dat', 'w')
 
 for sym in symbol_sequence:
     # sys.stdout.write('{0} '.format(int(sym)))
