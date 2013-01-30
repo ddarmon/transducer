@@ -8,7 +8,7 @@ def categorical(weights, objects):
     idx = sum(cs < numpy.random.rand()) #Find the index of the first weight over a random value.
     return objects[idx]
 
-num_symbols = 10000
+num_symbols = 100000
 
 syms = [0, 1]
 

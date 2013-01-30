@@ -3,9 +3,12 @@ import numpy
 import copy
 from collections import deque
 
+numpy.random.seed(1) # Fix the random number generator so we get
+                     # reproducible results.
+
 execfile("even_process.py")
 
-ofile = open('symseq.dat')
+ofile = open('even.dat')
 
 seq = ofile.readline()
 
@@ -104,6 +107,11 @@ def chisquared_test(state1, state2):
 #         print 'According to the chi-squared test, the two histories do not merge.'
 #         
 #     print hists[0][1], hists[hist_ind][1]
+
+
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# You could do this much better. See Shalizi's pseudocode.
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 for runthrough in range(10):
     num_states = len(hists)
