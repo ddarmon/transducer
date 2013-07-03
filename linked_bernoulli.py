@@ -38,7 +38,7 @@ T_final = 100000
 
 adj_matrix, Nv = get_adjacency('adj_mat.txt')
 
-scale_weights = 0.1 # How much to scale all of the weights by
+scale_weights = 0.2 # How much to scale all of the weights by
 
 def p(t):
 	# return p_max*(0.5 + 0.5*numpy.sin(omega*t))
@@ -61,7 +61,7 @@ Us = numpy.random.rand(Nv, T_final)
 # The skeleton to add for each observed spike.
 
 # impulse_skeleton = numpy.concatenate((numpy.ones(1), numpy.power(numpy.arange(1., 50.), -3)))
-impulse_skeleton = numpy.ones(1)
+impulse_skeleton = numpy.ones(2)
 
 for t in range(0, T_final):
 	if (t % 10000) == 0:

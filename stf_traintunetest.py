@@ -15,6 +15,9 @@ import ipdb
 from stf_methods import *
 from traintunetest import *
 
+import cssr_interface
+from filter_data_methods import *
+
 # numpy.random.seed(1) # Fix the random number generator so we get
                        # reproducible results.
 
@@ -27,6 +30,8 @@ line = ofile.readline()
 # Node of interest.
 
 noi = '1'
+
+L = 2 # The past to consider
 
 sources = []
 
@@ -70,8 +75,6 @@ noi_ts = ofile.readline().rstrip('\n')
 n = len(noi_ts)
 
 ofile.close()
-
-L = 1 # The past to consider
 
 num_symbols = 2 # The number of possible symbols
 
@@ -121,5 +124,27 @@ for ind in range(len(prediction)):
 	if true == '1':
 		base_rate += 1
 
-print 'The accuracy rate is {}...'.format(float(correct)/len(prediction))
-print 'Compared to using a biased coin {}...'.format(float(base_rate)/len(prediction))
+print 'Accuracy rate: {}...'.format(float(correct)/len(prediction))
+print 'Compared to using a biased coin {}...'.format(numpy.max((float(base_rate)/len(prediction), 1 - float(base_rate)/len(prediction))))
+
+L_CSSR = 2
+L_max  = L_CSSR
+
+metric = 'accuracy'
+
+fname = '{}/sample{}'.format(datatype, noi)
+
+zero_order_predict = generate_zero_order_CSM(fname)
+
+cssr_interface.run_CSSR(filename = fname, L = L_CSSR, savefiles = True, showdot = True, is_multiline = False, showCSSRoutput = False)
+
+CSM = get_CSM(fname = fname)
+
+epsilon_machine = get_epsilon_machine(fname = fname)
+
+states, L = get_equivalence_classes(fname) # A dictionary structure with the ordered pair
+								                                         # (symbol sequence, state)
+
+correct_rates = run_tests(fname = fname, CSM = CSM, zero_order_CSM = zero_order_predict, states = states, epsilon_machine = epsilon_machine, L = L_CSSR, L_max = L_max, metric = metric, print_predictions = False, print_state_series = False)
+
+print 'Compared to using CSSR on the timeseries {}...'.format(correct_rates[0])
