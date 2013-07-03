@@ -11,9 +11,9 @@ import ipdb
 
 # Use CSSR to generate the CSM files
 
-fname = 'timeseries_synthetic/complex-csm'
+fname = 'timeseries_synthetic/Bernoulli/sample0'
 
-historyLength = 6
+historyLength = 10
 
 is_multiline = False
 

@@ -170,6 +170,9 @@ def csmr(hists, num_symbols, alpha = 0.001):
 	return states, states_final, hist_lookup
 
 def filter_states(noi_ts, sources_ts, hist_lookup, L = 1):
+	# Returns the local causal state sequence for the node
+	# using the estimated partition returned by csmr.
+
 	state_seq = []
 
 	n = len(noi_ts)
@@ -184,3 +187,23 @@ def filter_states(noi_ts, sources_ts, hist_lookup, L = 1):
 	    
 	    state_seq.append(hist_lookup[cur_string])
 	return state_seq
+
+def predict(noi_ts, sources_ts, hist_lookup, states_probs, L = 1):
+	# Predict the next symbol in the sequence using the 
+	# predictive distributions inferred from csmr.
+
+	n = len(noi_ts)
+
+	prediction = ''
+
+	for start in range(0, n - L):
+	    cur_string = ''
+
+	    for source_ind in range(len(sources_ts)):
+	        cur_string += sources_ts[source_ind][start:(start+L)]
+
+	    cur_string += noi_ts[start:(start+L)]
+	    
+	    prediction += str(numpy.argmax(states_probs[hist_lookup[cur_string]][1]))
+
+	return prediction
