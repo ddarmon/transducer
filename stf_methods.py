@@ -22,6 +22,8 @@ def generate_hist_dict(noi_ts, sources_ts, num_symbols, L = 1):
 
 	hist_dict = {}
 
+	# ipdb.set_trace()
+
 	for start in range(0, n - L):
 		cur_string = ''
 
@@ -113,19 +115,24 @@ def csmr(hists, num_symbols, alpha = 0.001, H_test = 'chisquared'):
 	# initialism csmr stands for Causal State Merging 
 	# Reconstruction, in homage to CSSR.
 
+	# First, make a copy of hists, since it is passed by
+	# reference.
+
+	d_hists = copy.deepcopy(hists)
+
 	df = num_symbols - 1
 
-	numpy.random.shuffle(hists) # NOTE: numpy.random.shuffle shuffles in place
+	numpy.random.shuffle(d_hists) # NOTE: numpy.random.shuffle shuffles in place
 
 	# Create a list to contain the causal states.
 
 	states = []
 
-	nhists = len(hists) # the number of histories
+	nhists = len(d_hists) # the number of histories
 
 	# Move the first past into its own state
 
-	states.append(hists.pop(0))
+	states.append(d_hists.pop(0))
 
 	# Run through each of the remaining histories and see if it belongs to
 	# one of the existing states.
@@ -135,7 +142,7 @@ def csmr(hists, num_symbols, alpha = 0.001, H_test = 'chisquared'):
 	elif H_test == 'chisquared':
 		print 'Using chi-squared test...'
 
-	for historyind, history in enumerate(hists):
+	for historyind, history in enumerate(d_hists):
 		nomatch = True # nomatch keeps track, for each history, whether or not we've found
 					   # a matching causal state.
 		
