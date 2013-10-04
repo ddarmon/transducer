@@ -21,7 +21,9 @@ from filter_data_methods import *
 # numpy.random.seed(1) # Fix the random number generator so we get
                        # reproducible results.
 
-ofile = open('adj_mat.txt')
+adj_file = 'edge_list_3K_user_connected_directed.txt'
+
+ofile = open(adj_file)
 
 ofile.readline()
 
@@ -29,21 +31,44 @@ line = ofile.readline()
 
 # Node of interest.
 
-noi = '1'
+noi = '17'
 
 L = 2 # The past to consider
 
 sources = []
 
-while line != '':
-    source, dest, weight = line.split(',')
+weighted = False
 
-    if dest == noi:
-        sources.append(source)
+if weighted:
+    while line != '':
+        if ',' in line:
+            source, dest, weight = line.split(',')
+        elif '\t' in line:
+            source, dest, weight = line.split('\t')
+        else:
+            source, dest, weight = line.split(' ')
 
-    line = ofile.readline()
+        if dest == noi:
+            sources.append(source)
 
-ofile.close()
+        line = ofile.readline()
+
+    ofile.close()
+else:
+    while line != '':
+        if ',' in line:
+            source, dest = line.strip().split(',')
+        elif '\t' in line:
+            source, dest = line.strip().split('\t')
+        else:
+            source, dest = line.strip().split(' ')
+
+        if dest == noi:
+            sources.append(source)
+
+        line = ofile.readline()
+
+    ofile.close()
 
 # sources_ts contains all of the time series
 # for the inputs *into* a particular node (in
@@ -53,7 +78,7 @@ ofile.close()
 
 sources_ts = []
 
-datatype = 'timeseries_synthetic/Bernoulli'
+datatype = 'timeseries_synthetic/twitter_p1_i2'
 
 # dataset = 8
 # datatype = 'timeseries/NEURO-Set' + str(dataset)
@@ -109,25 +134,32 @@ prediction = predict(noi_ts, sources_ts, hist_lookup, states_probs, L = L)
 # num_forward = 1000
 
 # for ind in range(num_forward):
-# 	print '{}\t{}'.format(noi_ts[L+ind], prediction[ind])
+#   print '{}\t{}'.format(noi_ts[L+ind], prediction[ind])
 
 correct = 0
 base_rate = 0
 
+if numpy.mean(numpy.fromstring(noi_ts, dtype = 'int8') - 48) < 0.5:
+    majority_vote = '0'
+else:
+    majority_vote = '1'
+
 for ind in range(len(prediction)):
-	true = noi_ts[L+ind]
-	pred = prediction[ind]
+    true = noi_ts[L+ind]
+    pred = prediction[ind]
 
-	if true == pred:
-		correct += 1
+    if true == pred:
+       correct += 1
 
-	if true == '1':
-		base_rate += 1
+    if true == majority_vote:
+       base_rate += 1
+
+    print true, pred
 
 print 'Accuracy rate: {}...'.format(float(correct)/len(prediction))
 print 'Compared to using a biased coin {}...'.format(numpy.max((float(base_rate)/len(prediction), 1 - float(base_rate)/len(prediction))))
 
-L_CSSR = 2
+L_CSSR = L
 L_max  = L_CSSR
 
 metric = 'accuracy'
@@ -143,7 +175,7 @@ CSM = get_CSM(fname = fname)
 epsilon_machine = get_epsilon_machine(fname = fname)
 
 states, L = get_equivalence_classes(fname) # A dictionary structure with the ordered pair
-								                                         # (symbol sequence, state)
+                                                             # (symbol sequence, state)
 
 correct_rates = run_tests(fname = fname, CSM = CSM, zero_order_CSM = zero_order_predict, states = states, epsilon_machine = epsilon_machine, L = L_CSSR, L_max = L_max, metric = metric, print_predictions = False, print_state_series = False)
 
