@@ -20,18 +20,20 @@ p_max = 0.1
 # Loop until we've reached the appropriate amount of 
 # time.
 
-T_final = 10000
+T_final = 1000000
 
 # The weighted adjacency matrix, stored as a dictionary of the form:
 # {from_node : [(to_node1, weight1), (to_node2, weight2)]}
 
 # adj_matrix_out = {0 : [(1, uniform_weight), (2, uniform_weight), (3, uniform_weight), (4, uniform_weight), (5, 0.005)], 5 : [(6, uniform_weight), (7, uniform_weight), (8, uniform_weight), (0, 0.005)]}
 
-network_type = 'twitter'
+network_type = 'toy_transducer'
 
-adj_matrix_out, adj_matrix_in, Nv = get_adjacency_to_weight('edge_list_3K_user_connected_directed.txt')
+adj_mat_fname = 'adj_mat_toy.txt'
 
-scale_weights = 0.2 # How much to scale all of the weights by
+adj_matrix_out, adj_matrix_in, Nv = get_adjacency_to_weight(adj_mat_fname)
+
+scale_weights = 1 # How much to scale all of the weights by
 
 def p(t):
 	return p_max*numpy.ones(t.shape)
@@ -52,7 +54,7 @@ Us = numpy.random.rand(Nv, T_final)
 # The skeleton to add for each observed spike.
 
 # impulse_skeleton = numpy.concatenate((numpy.ones(1), numpy.power(numpy.arange(1., 50.), -3)))
-impulse_skeleton = numpy.ones(2)
+impulse_skeleton = numpy.ones(1)
 
 for t in range(0, T_final):
 	if (t % 10) == 0:

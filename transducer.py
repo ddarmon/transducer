@@ -19,7 +19,8 @@ from stf_methods import *
 
 print '\n\n\n\n\n\nWARNING!!! This does not currently handle input symbols with more than 0..9 ... \n\n\n\n\n'
 
-adj_file = 'edge_list_3K_user_connected_directed.txt'
+# adj_file = 'edge_list_3K_user_connected_directed.txt'
+adj_file = 'adj_mat_toy.txt'
 
 ofile = open(adj_file)
 
@@ -31,7 +32,7 @@ line = ofile.readline()
 
 # Node of interest.
 
-noi = '17'
+noi = '1'
 
 # sources_ts contains all of the time series
 # for the inputs *into* a particular node (in
@@ -39,7 +40,7 @@ noi = '17'
 # a particular node (in the case of a spatio-
 # temporal random field).
 
-datatype = 'timeseries_synthetic/twitter_p1_i2'
+datatype = 'timeseries_synthetic/toy_transducer'
 
 source = '{}/input{}'.format(datatype, noi)
 sources_ts = []
@@ -57,7 +58,7 @@ n = len(noi_ts)
 
 ofile.close()
 
-L = 1 # The past to consider
+L = 2 # The past to consider
 
 num_symbols = 2 # The number of possible symbols
 
@@ -80,7 +81,7 @@ states_counts, states_probs, hist_lookup = csmr(hists, num_symbols, alpha = 0.00
 
 states_final = states_probs
 
-print states_final
+# print states_final
 
 state_seq = filter_states(noi_ts, sources_ts, hist_lookup, L = L)
 
@@ -99,7 +100,7 @@ print 'The local statistical complexity is {}...'.format(C)
 
 # print hist_dict
 
-for hist in hist_dict:
-	prop_0, prop_1 = hist_dict[hist]
+# for hist in hist_dict:
+# 	count_0, count_1 = hist_dict[hist]
 
-	print hist, prop_1/float(prop_0 + prop_1)
+# 	print hist, count_1/float(count_0 + count_1), count_0, count_1

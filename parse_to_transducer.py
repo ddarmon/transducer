@@ -25,80 +25,89 @@ print '\n\n\n\n\n\nWARNING!!! This does not currently handle input symbols with 
 # numpy.random.seed(1) # Fix the random number generator so we get
 					   # reproducible results.
 
-adj_file = 'edge_list_3K_user_connected_directed.txt'
+# adj_file = 'edge_list_3K_user_connected_directed.txt'
+adj_file = 'adj_mat_toy.txt'
 
-with open(adj_file) as ofile:
-	weighted = False
+datatype = 'timeseries_synthetic/toy_transducer'
 
-	ofile.readline()
-
-	line = ofile.readline()
-
+for noi_ind in range(5):
 	# Node of interest.
 
-	noi = '17'
+	noi = str(noi_ind)
 
-	sources = []
+	print 'On node {}...'.format(noi)
 
-	if weighted:
-		while line != '':
-			if '\t' in line:
-				source, dest, weight = line.strip().split('\t')
-			elif ',' in line:
-				source, dest, weight = line.strip().split(',')
-			else:
-				source, dest, weight = line.strip().split(' ')
+	with open(adj_file) as ofile:
+		weighted = False
 
-			if dest == noi:
-				sources.append(source)
+		ofile.readline()
 
-			line = ofile.readline()
+		line = ofile.readline()
+
+		sources = []
+
+		if weighted:
+			while line != '':
+				if '\t' in line:
+					source, dest, weight = line.strip().split('\t')
+				elif ',' in line:
+					source, dest, weight = line.strip().split(',')
+				else:
+					source, dest, weight = line.strip().split(' ')
+
+				if dest == noi:
+					sources.append(source)
+
+				line = ofile.readline()
+		else:
+			while line != '':
+				if '\t' in line:
+					source, dest = line.strip().split('\t')
+				elif ',' in line:
+					source, dest = line.strip().split(',')
+				else:
+					source, dest = line.strip().split(' ')
+
+				if dest == noi:
+					sources.append(source)
+
+				line = ofile.readline()
+
+	# sources_ts contains all of the time series
+	# for the inputs *into* a particular node (in
+	# the case of a transducer) or *adjacent to*
+	# a particular node (in the case of a spatio-
+	# temporal random field).
+
+	sources_ts = []
+
+	print sources
+
+	for source in sources:
+		ofile = open('{}/sample{}.dat'.format(datatype, source))
+
+		sources_ts.append(ofile.readline().rstrip('\n'))
+
+		ofile.close()
+
+	if len(sources_ts) == 0:
+		pass
 	else:
-		while line != '':
-			if '\t' in line:
-				source, dest = line.strip().split('\t')
-			elif ',' in line:
-				source, dest = line.strip().split(',')
-			else:
-				source, dest = line.strip().split(' ')
+		T = len(sources_ts[0])
 
-			if dest == noi:
-				sources.append(source)
+		# A particular compression, namely the
+		# number of neighbors tweeting at the previous
+		# timestep.
 
-			line = ofile.readline()
+		with open('{}/input{}.dat'.format(datatype, noi), 'w') as wfile:
+			for t in xrange(T):
+				cur_tot = 0
+				for source in sources_ts:
+					cur_tot += int(source[t])
 
-# sources_ts contains all of the time series
-# for the inputs *into* a particular node (in
-# the case of a transducer) or *adjacent to*
-# a particular node (in the case of a spatio-
-# temporal random field).
+				if cur_tot > 9:
+					print 'Sorry, the code doesn\'t work with that kind of alphabet yet.'
 
-sources_ts = []
+					sys.exit(1)
 
-datatype = 'timeseries_synthetic/twitter_p1_i2'
-
-for source in sources:
-	ofile = open('{}/sample{}.dat'.format(datatype, source))
-
-	sources_ts.append(ofile.readline().rstrip('\n'))
-
-	ofile.close()
-
-T = len(sources_ts[0])
-
-# A particular compression, namely the
-# number of neighbors tweeting at the previous
-# timestep.
-
-with open('{}/input{}.dat'.format(datatype, noi), 'w') as wfile:
-	for t in xrange(T):
-		cur_tot = 0
-		for source in sources_ts:
-			cur_tot += int(source[t])
-
-		if cur_tot > 9:
-			print 'Sorry, the code doesn\'t work with that kind of alphabet yet.'
-
-			sys.exit(1)
-
-		wfile.write('{}'.format(cur_tot))
+				wfile.write('{}'.format(cur_tot))
