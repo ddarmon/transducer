@@ -4,7 +4,14 @@
 # network), and for an arbitrary network, both of which
 # are prescribed by their adjacency matrix.
 #
-# DMD 030713-11-40
+# The 'ensemble' refers to the fact that we compute
+# the causal states by 'averaging' over trials at a
+# fixed time t rather than 'averaging' over time
+# for a fixed trial. This is the more appropriate
+# approach when trying to compute how the local
+# statistical complexity C(t, v) varies over time.
+#
+# DMD 291013-13-36
 
 import scipy.stats
 import numpy
@@ -17,10 +24,8 @@ from stf_methods import *
 # numpy.random.seed(1) # Fix the random number generator so we get
 					   # reproducible results.
 
-print '\n\n\n\n\n\nWARNING!!! This does not currently handle input symbols with more than 0..9 ... \n\n\n\n\n'
-
-adj_file = 'edge_list_3K_user_connected_directed.txt'
-# adj_file = 'adj_mat_toy.txt'
+# adj_file = 'edge_list_3K_user_connected_directed.txt'
+adj_file = 'adj_mat_toy.txt'
 
 ofile = open(adj_file)
 
@@ -32,7 +37,38 @@ line = ofile.readline()
 
 # Node of interest.
 
-noi = '17'
+noi = '1'
+
+sources = []
+
+if weighted:
+	while line != '':
+		if '\t' in line:
+			source, dest, weight = line.strip().split('\t')
+		elif ',' in line:
+			source, dest, weight = line.strip().split(',')
+		else:
+			source, dest, weight = line.strip().split(' ')
+
+		if dest == noi:
+			sources.append(source)
+
+		line = ofile.readline()
+else:
+	while line != '':
+		if '\t' in line:
+			source, dest = line.strip().split('\t')
+		elif ',' in line:
+			source, dest = line.strip().split(',')
+		else:
+			source, dest = line.strip().split(' ')
+
+		if dest == noi:
+			sources.append(source)
+
+		line = ofile.readline()
+
+ofile.close()
 
 # sources_ts contains all of the time series
 # for the inputs *into* a particular node (in
@@ -40,20 +76,30 @@ noi = '17'
 # a particular node (in the case of a spatio-
 # temporal random field).
 
-datatype = 'timeseries_synthetic/twitter_p1_i2'
-# datatype = 'timeseries_synthetic/toy_transducer'
-
-source = '{}/input{}'.format(datatype, noi)
 sources_ts = []
 
-with open('{}.dat'.format(source)) as ofile:
+network_type = 'toy_transducer'
+# network_type = 'twitter_p1_i2'
+
+
+datatype = 'timeseries_synthetic/{}'.format(network_type)
+
+# dataset = 8
+# datatype = 'timeseries/NEURO-Set' + str(dataset)
+
+for source in sources:
+	ofile = open('{}/sample{}.dat'.format(datatype, source))
+
 	sources_ts.append(ofile.readline().rstrip('\n'))
+
+	ofile.close()
+
+ofile = open('{}/sample{}.dat'.format(datatype, noi))
 
 # noi_ts contains the time series for the node that
 # we wish to predict.
 
-with open('{}/sample{}.dat'.format(datatype, noi)) as ofile:
-	noi_ts = ofile.readline().rstrip('\n')
+noi_ts = ofile.readline().rstrip('\n')
 
 n = len(noi_ts)
 
@@ -74,6 +120,7 @@ df = num_symbols - 1
 #
 # at a level alpha
 
+
 alpha = 0.001
 
 test_type = 'chisquared'
@@ -82,7 +129,7 @@ states_counts, states_probs, hist_lookup = csmr(hists, num_symbols, alpha = 0.00
 
 states_final = states_probs
 
-# print states_final
+print states_final
 
 state_seq = filter_states(noi_ts, sources_ts, hist_lookup, L = L)
 
@@ -98,10 +145,3 @@ for prob in state_probs:
 C = -C
 
 print 'The local statistical complexity is {}...'.format(C)
-
-# print hist_dict
-
-# for hist in hist_dict:
-# 	count_0, count_1 = hist_dict[hist]
-
-# 	print hist, count_1/float(count_0 + count_1), count_0, count_1

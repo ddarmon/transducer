@@ -25,12 +25,14 @@ print '\n\n\n\n\n\nWARNING!!! This does not currently handle input symbols with 
 # numpy.random.seed(1) # Fix the random number generator so we get
 					   # reproducible results.
 
-# adj_file = 'edge_list_3K_user_connected_directed.txt'
-adj_file = 'adj_mat_toy.txt'
+adj_file = 'edge_list_3K_user_connected_directed.txt'
+# adj_file = 'adj_mat_toy.txt'
 
-datatype = 'timeseries_synthetic/toy_transducer'
+# datatype = 'timeseries_synthetic/toy_transducer'
+datatype = 'timeseries_synthetic/twitter_p1_i2'
 
-for noi_ind in range(5):
+# for noi_ind in range(5):
+for noi_ind in ['17']:
 	# Node of interest.
 
 	noi = str(noi_ind)

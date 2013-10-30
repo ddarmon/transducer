@@ -11,6 +11,7 @@ import numpy
 import copy
 from collections import deque
 import ipdb
+import glob
 
 from stf_methods import *
 from traintunetest import *
@@ -21,10 +22,14 @@ from filter_data_methods import *
 # numpy.random.seed(1) # Fix the random number generator so we get
                        # reproducible results.
 
+print '\n\n\n\n\n\nWARNING!!! This does not currently handle input symbols with more than 0..9 ... \n\n\n\n\n'
+
 adj_file = 'edge_list_3K_user_connected_directed.txt'
 # adj_file = 'adj_mat_toy.txt'
 
 ofile = open(adj_file)
+
+weighted = False
 
 ofile.readline()
 
@@ -34,42 +39,7 @@ line = ofile.readline()
 
 noi = '17'
 
-L = 1 # The past to consider
-
-sources = []
-
-weighted = False
-
-if weighted:
-    while line != '':
-        if ',' in line:
-            source, dest, weight = line.split(',')
-        elif '\t' in line:
-            source, dest, weight = line.split('\t')
-        else:
-            source, dest, weight = line.split(' ')
-
-        if dest == noi:
-            sources.append(source)
-
-        line = ofile.readline()
-
-    ofile.close()
-else:
-    while line != '':
-        if ',' in line:
-            source, dest = line.strip().split(',')
-        elif '\t' in line:
-            source, dest = line.strip().split('\t')
-        else:
-            source, dest = line.strip().split(' ')
-
-        if dest == noi:
-            sources.append(source)
-
-        line = ofile.readline()
-
-    ofile.close()
+L = 1
 
 # sources_ts contains all of the time series
 # for the inputs *into* a particular node (in
@@ -77,27 +47,23 @@ else:
 # a particular node (in the case of a spatio-
 # temporal random field).
 
+# datatype = 'timeseries_synthetic/toy_transducer'
+datatype = 'timeseries_synthetic/twitter_p1_i2'
+
+source = glob.glob('{}/input{}.dat'.format(datatype, noi))
 sources_ts = []
 
-datatype = 'timeseries_synthetic/twitter_p1_i2'
-# datatype = 'timeseries_synthetic/toy_transducer'
-
-# dataset = 8
-# datatype = 'timeseries/NEURO-Set' + str(dataset)
-
-for source in sources:
-    ofile = open('{}/sample{}.dat'.format(datatype, source))
-
-    sources_ts.append(ofile.readline().rstrip('\n'))
-
-    ofile.close()
-
-ofile = open('{}/sample{}.dat'.format(datatype, noi))
+if len(source) == 0: # the node has no input:
+  pass
+else:
+  with open('{}'.format(source[0])) as ofile:
+      sources_ts.append(ofile.readline().rstrip('\n'))
 
 # noi_ts contains the time series for the node that
 # we wish to predict.
 
-noi_ts = ofile.readline().rstrip('\n')
+with open('{}/sample{}.dat'.format(datatype, noi)) as ofile:
+    noi_ts = ofile.readline().rstrip('\n')
 
 n = len(noi_ts)
 
@@ -183,9 +149,9 @@ correct_rates = run_tests(fname = fname, CSM = CSM, zero_order_CSM = zero_order_
 
 print 'Compared to using CSSR on the timeseries {}...'.format(correct_rates[0])
 
-# print hist_dict
+print hist_dict
 
-# for hist in hist_dict:
-#   count_0, count_1 = hist_dict[hist]
+for hist in hist_dict:
+  count_0, count_1 = hist_dict[hist]
 
-#   print hist, count_1/float(count_0 + count_1), count_0, count_1
+  print hist, count_1/float(count_0 + count_1), count_0, count_1

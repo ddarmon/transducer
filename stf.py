@@ -18,6 +18,7 @@ from stf_methods import *
 					   # reproducible results.
 
 adj_file = 'edge_list_3K_user_connected_directed.txt'
+# adj_file = 'adj_mat_toy.txt'
 
 ofile = open(adj_file)
 
@@ -70,7 +71,8 @@ ofile.close()
 
 sources_ts = []
 
-datatype = 'timeseries_synthetic/twitter_p1'
+datatype = 'timeseries_synthetic/twitter_p1_i2'
+# datatype = 'timeseries_synthetic/toy_transducer'
 
 # dataset = 8
 # datatype = 'timeseries/NEURO-Set' + str(dataset)
