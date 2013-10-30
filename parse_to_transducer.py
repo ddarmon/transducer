@@ -20,24 +20,26 @@ import sys
 
 from stf_methods import *
 
-print '\n\n\n\n\n\nWARNING!!! This does not currently handle input symbols with more than 0..9 ... \n\n\n\n\n'
-
 # numpy.random.seed(1) # Fix the random number generator so we get
 					   # reproducible results.
 
-adj_file = 'edge_list_3K_user_connected_directed.txt'
-# adj_file = 'adj_mat_toy.txt'
+# adj_file = 'edge_list_3K_user_connected_directed.txt'
+adj_file = 'adj_mat_toy.txt'
 
-# datatype = 'timeseries_synthetic/toy_transducer'
-datatype = 'timeseries_synthetic/twitter_p1_i2'
+datatype = 'timeseries_synthetic/toy_transducer'
+# datatype = 'timeseries_synthetic/twitter_p1_i2'
 
 # for noi_ind in range(5):
-for noi_ind in ['17']:
+for noi_ind in ['1']:
 	# Node of interest.
 
 	noi = str(noi_ind)
 
 	print 'On node {}...'.format(noi)
+
+	# Read in the parents of the node of interest,
+	# which act as *sources/inputs* to the node of
+	# interest.
 
 	with open(adj_file) as ofile:
 		weighted = False
@@ -75,41 +77,51 @@ for noi_ind in ['17']:
 
 				line = ofile.readline()
 
-	# sources_ts contains all of the time series
-	# for the inputs *into* a particular node (in
-	# the case of a transducer) or *adjacent to*
-	# a particular node (in the case of a spatio-
-	# temporal random field).
-
-	sources_ts = []
-
-	print sources
-
-	for source in sources:
-		ofile = open('{}/sample{}.dat'.format(datatype, source))
-
-		sources_ts.append(ofile.readline().rstrip('\n'))
-
-		ofile.close()
-
-	if len(sources_ts) == 0:
+	if len(sources) == 0:
 		pass
 	else:
-		T = len(sources_ts[0])
+		# sources_ts contains all of the time series
+		# for the inputs *into* a particular node (in
+		# the case of a transducer) or *adjacent to*
+		# a particular node (in the case of a spatio-
+		# temporal random field).
+
+		sample_count = 0
+
+		with open('{}/sample{}.dat'.format(datatype, sources[0])) as ofile:
+			for line in ofile:
+				sample_count += 1
+
+			if ';' in line: # If we have an alphabet of size greater than 10.
+				symbol_count = len(line.strip()[:-1].split(';'))
+			else: # If we have an alphabet of size less than or equal to 10.
+				symbol_count = len(line.strip())
+
+		sources_ts = numpy.zeros((sample_count, symbol_count, len(sources)), dtype = 'int8')
+
+		print sources
+
+		for source_index, source in enumerate(sources):
+			with open('{}/sample{}.dat'.format(datatype, source)) as ofile:
+				for sample_index, line in enumerate(ofile):
+					if ';' in line:
+						ts = line.strip()[:-1].split(';')
+
+						sources_ts[sample_index, :, source_index] = cur_ts[sample_index, :] = map(int, ts)
+					else:
+						ts = line.strip()
+
+						sources_ts[sample_index, :, source_index] = numpy.fromstring(ts, dtype = 'int8') - 48
 
 		# A particular compression, namely the
 		# number of neighbors tweeting at the previous
 		# timestep.
 
 		with open('{}/input{}.dat'.format(datatype, noi), 'w') as wfile:
-			for t in xrange(T):
-				cur_tot = 0
-				for source in sources_ts:
-					cur_tot += int(source[t])
+			for sample_ind in range(sample_count):
+				for t in range(symbol_count):
+					cur_tot = numpy.sum(sources_ts[sample_ind, t, :]) # Sum up the number of inputs active in the current sample / timestep
 
-				if cur_tot > 9:
-					print 'Sorry, the code doesn\'t work with that kind of alphabet yet.'
+					wfile.write('{};'.format(cur_tot))
 
-					sys.exit(1)
-
-				wfile.write('{}'.format(cur_tot))
+				wfile.write('\n')

@@ -20,7 +20,7 @@ p_max = 0.1
 # Loop until we've reached the appropriate amount of 
 # time.
 
-T_final = 100
+T_final = 1000
 
 # Loop until we've run the appropriate number of trials.
 

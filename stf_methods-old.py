@@ -15,38 +15,28 @@ def generate_hist_dict(noi_ts, sources_ts, num_symbols, L = 1):
 	# that is used for the state merging reconstruction of
 	# the local causal states.
 
-	# The length of the timeseries.
-
-	n = noi_ts.shape[1]
+	n = len(noi_ts)
 
 	# A dictionary of histories. It is of the form
 	#   {history : [# of 0s, # of 1s, ..., # of num_symbols]}
 
 	hist_dict = {}
 
-	# Convention: we'll record a history as a tuple of tuples, i.e.
-	#	((noi_ts[t-1], noi_ts[t - 2], ..., noi_ts[t - L]), (sources_ts[0][t-1], ..., sources_ts[0][t-L]), ...)
-	# This is the simplest way I can think of for doing this.
+	# ipdb.set_trace()
 
 	for start in range(0, n - L):
-		future_symbol = noi_ts[0, start+L]
+		cur_string = ''
 
-		cur_hist = []
+		for source_ind in range(len(sources_ts)):
+			cur_string += sources_ts[source_ind][start:(start+L)]
 
-		cur_hist.append(tuple(noi_ts[0, start:(start+L)]))
-
-		for source_ind in range(sources_ts.shape[2]):
-			cur_hist.append(tuple(sources_ts[0, start:(start+L), source_ind]))
+		cur_string += noi_ts[start:(start+L+1)]
 		
-		# Turn cur_hist from a list to a tuple.
-
-		cur_hist = tuple(cur_hist)
-
-		if cur_hist in hist_dict: # We have found an observed sequence already in our collection
-			hist_dict[cur_hist][future_symbol] += 1
+		if cur_string[0:-1] in hist_dict: # We have found an observed sequence already in our collection
+			hist_dict[cur_string[0:-1]][int(cur_string[-1])] += 1
 		else: # We have not found the observed sequence in our collection yet
-			hist_dict[cur_hist] = [0 for ind in range(num_symbols)]
-			hist_dict[cur_hist][future_symbol] += 1
+			hist_dict[cur_string[0:-1]] = [0 for ind in range(num_symbols)]
+			hist_dict[cur_string[0:-1]][int(cur_string[-1])] += 1
 
 	hists = []
 
@@ -198,21 +188,17 @@ def filter_states(noi_ts, sources_ts, hist_lookup, L = 1):
 
 	state_seq = []
 
-	n = noi_ts.shape[1]
+	n = len(noi_ts)
 
 	for start in range(0, n - L):
-		cur_hist = []
+		cur_string = ''
 
-		cur_hist.append(tuple(noi_ts[0, start:(start+L)]))
+		for source_ind in range(len(sources_ts)):
+			cur_string += sources_ts[source_ind][start:(start+L)]
 
-		for source_ind in range(sources_ts.shape[2]):
-			cur_hist.append(tuple(sources_ts[0, start:(start+L), source_ind]))
+		cur_string += noi_ts[start:(start+L)]
 		
-		# Turn cur_hist from a list to a tuple.
-
-		cur_hist = tuple(cur_hist)
-		
-		state_seq.append(hist_lookup[cur_hist])
+		state_seq.append(hist_lookup[cur_string])
 	return state_seq
 
 def predict(noi_ts, sources_ts, hist_lookup, states_probs, L = 1):
