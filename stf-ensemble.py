@@ -149,7 +149,17 @@ states_counts, states_probs, hist_lookup = csmr(hists, alphabet_size, alpha = 0.
 
 states_final = states_probs
 
-print states_final
+print '\n\n'
+
+for state in states_counts:
+	for hist in state[0]:
+		print hist
+
+	print state[1]
+
+	print '\n'
+
+print '\n\n'
 
 state_seq = filter_states(noi_ts, sources_ts, hist_lookup, L = L)
 

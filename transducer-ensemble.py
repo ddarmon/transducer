@@ -24,10 +24,8 @@ from stf_methods import *
 # numpy.random.seed(1) # Fix the random number generator so we get
 					   # reproducible results.
 
-print '\n\n\n\n\n\nWARNING!!! This does not currently handle input symbols with more than 0..9 ... \n\n\n\n\n'
-
-adj_file = 'edge_list_3K_user_connected_directed.txt'
-# adj_file = 'adj_mat_toy.txt'
+# adj_file = 'edge_list_3K_user_connected_directed.txt'
+adj_file = 'adj_mat_toy.txt'
 
 ofile = open(adj_file)
 
@@ -93,7 +91,7 @@ with open('{}/sample{}.dat'.format(datatype, noi)) as ofile:
 
 			noi_ts[sample_index, :] = numpy.fromstring(ts, dtype = 'int8') - 48
 
-L = 1 # The past to consider
+L = 2 # The past to consider
 
 alphabet_size = 2 # The number of possible symbols
 
@@ -123,6 +121,18 @@ state_seq = filter_states(noi_ts, sources_ts, hist_lookup, L = L)
 state_props = numpy.bincount(state_seq)
 
 state_probs = state_props / float(numpy.sum(state_props))
+
+print '\n\n'
+
+for state in states_counts:
+	for hist in state[0]:
+		print hist
+
+	print state[1]
+
+	print '\n'
+
+print '\n\n'
 
 C = 0
 
