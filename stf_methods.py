@@ -55,6 +55,77 @@ def generate_hist_dict(noi_ts, sources_ts, num_symbols, L = 1):
 
 	return hist_dict, hists
 
+def generate_hist_dict_ensemble(noi_ts, sources_ts, num_symbols):
+	# generate_hist_dict_ensemble takes in an *ensemble* of time
+	# series and computes the history counts across
+	# ensembles instead of across time. The output is a 
+	# dictionary of the form:
+	# 	{history : [# of 0s, # of 1s, ..., # of num_symbols]}
+	# that is used for the state merging reconstruction of
+	# the local causal states.
+
+	# Recall that the full sources_ts is
+	# 	N x T x Np
+	# where N is the number of trials, T is the number of timesteps
+	# and Np is the number of parents of the noi.
+
+	# We'll assume that for a fixed time t, a chunk of this data
+	# structure has been passed as
+	#
+	# 	sources_ts[:, (t-L):t, :]
+	#
+	# That is, we've passed from time t - L to time t - 1,
+	# or L timesteps overall.
+
+	# Similarly, recall that noi_ts is
+	# 	N x T x 1
+
+	# We'll assume that for a fixed time t, a chunk of this data
+	# structure has been passed as
+	#
+	# 	noi_ts[:, (t-L):(t+1), :]
+	#
+	# That is, we pass L timesteps back, along with the future time
+	# step to predict.
+
+	# A dictionary of histories. It is of the form
+	#   {history : [# of 0s, # of 1s, ..., # of num_symbols]}
+
+	hist_dict = {}
+
+	# Convention: we'll record a history as a tuple of tuples, i.e.
+	#	((noi_ts[t-1], noi_ts[t - 2], ..., noi_ts[t - L]), (sources_ts[0][t-1], ..., sources_ts[0][t-L]), ...)
+	# This is the simplest way I can think of for doing this.
+
+	N = noi_ts.shape[0] # The number of trials
+
+	for n in range(N):
+		future_symbol = noi_ts[n, -1]
+
+		cur_hist = []
+
+		cur_hist.append(tuple(noi_ts[n, 0:-1]))
+
+		for source_ind in range(sources_ts.shape[2]):
+			cur_hist.append(tuple(sources_ts[n, :, source_ind]))
+		
+		# Turn cur_hist from a list to a tuple.
+
+		cur_hist = tuple(cur_hist)
+
+		if cur_hist in hist_dict: # We have found an observed sequence already in our collection
+			hist_dict[cur_hist][future_symbol] += 1
+		else: # We have not found the observed sequence in our collection yet
+			hist_dict[cur_hist] = [0 for ind in range(num_symbols)]
+			hist_dict[cur_hist][future_symbol] += 1
+
+	hists = []
+
+	for histories in hist_dict:
+		hists.append([[histories], hist_dict[histories]])
+
+	return hist_dict, hists
+
 def merge_states(state1, state2):
 	# Input: Two lists of the form [[hist1, hist2, ...], [# 0s, #1s, ..., #num_symbols]]
 	#

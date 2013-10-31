@@ -23,14 +23,14 @@ from stf_methods import *
 # numpy.random.seed(1) # Fix the random number generator so we get
 					   # reproducible results.
 
-# adj_file = 'edge_list_3K_user_connected_directed.txt'
-adj_file = 'adj_mat_toy.txt'
+adj_file = 'edge_list_3K_user_connected_directed.txt'
+# adj_file = 'adj_mat_toy.txt'
 
-datatype = 'timeseries_synthetic/toy_transducer'
-# datatype = 'timeseries_synthetic/twitter_p1_i2'
+# datatype = 'timeseries_synthetic/toy_transducer'
+datatype = 'timeseries_synthetic/twitter_p1_i2_ensemble'
 
 # for noi_ind in range(5):
-for noi_ind in ['1']:
+for noi_ind in ['0']:
 	# Node of interest.
 
 	noi = str(noi_ind)

@@ -20,7 +20,7 @@ p_max = 0.1
 # Loop until we've reached the appropriate amount of 
 # time.
 
-T_final = 1000
+T_final = 100
 
 # Loop until we've run the appropriate number of trials.
 
@@ -31,14 +31,15 @@ num_trials = 1000
 
 # adj_matrix_out = {0 : [(1, uniform_weight), (2, uniform_weight), (3, uniform_weight), (4, uniform_weight), (5, 0.005)], 5 : [(6, uniform_weight), (7, uniform_weight), (8, uniform_weight), (0, 0.005)]}
 
-network_type = 'toy_transducer'
+# network_type = 'toy_transducer'
+network_type = 'twitter_p1_i2_ensemble'
 
-adj_mat_fname = 'adj_mat_toy.txt'
-# adj_mat_fname = 'edge_list_3K_user_connected_directed.txt'
+# adj_mat_fname = 'adj_mat_toy.txt'
+adj_mat_fname = 'edge_list_3K_user_connected_directed.txt'
 
 adj_matrix_out, adj_matrix_in, Nv = get_adjacency_to_weight(adj_mat_fname)
 
-scale_weights = 1 # How much to scale the influence weights by
+scale_weights = 0.2 # How much to scale the influence weights by
 
 #
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -63,9 +64,9 @@ for trial_ind in range(num_trials):
 	# Scale the baseline rate so that each individual
 	# vertex has its own base rate.
 
-	pv = numpy.array([5, 1, 5, 5, 5, 5])
+	# pv = numpy.array([5, 1, 5, 5, 5, 5])
 
-	Pt = Pt*pv[:, numpy.newaxis]
+	# Pt = Pt*pv[:, numpy.newaxis]
 
 	# A placeholder for all of the spikes. It is a 
 	# Nv by T_final array.

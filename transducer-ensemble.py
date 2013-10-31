@@ -18,14 +18,15 @@ import numpy
 import copy
 from collections import deque
 import ipdb
+import pylab
 
 from stf_methods import *
 
 # numpy.random.seed(1) # Fix the random number generator so we get
 					   # reproducible results.
 
-# adj_file = 'edge_list_3K_user_connected_directed.txt'
-adj_file = 'adj_mat_toy.txt'
+adj_file = 'edge_list_3K_user_connected_directed.txt'
+# adj_file = 'adj_mat_toy.txt'
 
 ofile = open(adj_file)
 
@@ -37,7 +38,7 @@ line = ofile.readline()
 
 # Node of interest.
 
-noi = '1'
+noi = '0'
 
 # sources_ts contains all of the time series
 # for the inputs *into* a particular node (in
@@ -45,8 +46,8 @@ noi = '1'
 # a particular node (in the case of a spatio-
 # temporal random field).
 
-# datatype = 'timeseries_synthetic/twitter_p1_i2'
-datatype = 'timeseries_synthetic/toy_transducer'
+datatype = 'timeseries_synthetic/twitter_p1_i2_ensemble'
+# datatype = 'timeseries_synthetic/toy_transducer'
 
 source = '{}/input{}'.format(datatype, noi)
 
@@ -82,6 +83,10 @@ noi_ts = numpy.zeros((sample_count, symbol_count), dtype = 'int8')
 
 with open('{}/sample{}.dat'.format(datatype, noi)) as ofile:
 	for sample_index, line in enumerate(ofile):
+		if sample_index == sample_count:
+			break # We have more samples for noi than for the input
+				  # so we stop.
+
 		if ';' in line:
 			ts = line.strip()[:-1].split(';')
 
@@ -91,61 +96,138 @@ with open('{}/sample{}.dat'.format(datatype, noi)) as ofile:
 
 			noi_ts[sample_index, :] = numpy.fromstring(ts, dtype = 'int8') - 48
 
-L = 2 # The past to consider
+L = 1 # The past to consider
 
 alphabet_size = 2 # The number of possible symbols
 
-hist_dict, hists = generate_hist_dict(noi_ts = noi_ts, sources_ts = sources_ts, num_symbols = alphabet_size, L = L)
+# hist_dict, hists = generate_hist_dict(noi_ts = noi_ts, sources_ts = sources_ts, num_symbols = alphabet_size, L = L)
 
-df = alphabet_size - 1
+ts = range(L, noi_ts.shape[1])
+# ts = range(L, L+1)
 
-# Perform the hypothesis test:
-#
-#	   H0: Two distributions are equal
-#	   H1: Two distributions are *not* equal
-#
-# at a level alpha
+Cs = numpy.zeros(len(ts))
 
-alpha = 0.001
+Cs_correct_model = numpy.zeros(len(ts))
 
-test_type = 'chisquared'
+for t_ind, t in enumerate(ts):
+	print 'At time index {} of {}...'.format(t, ts[-1])
 
-states_counts, states_probs, hist_lookup = csmr(hists, alphabet_size, alpha = 0.001, H_test = test_type)
+	hist_dict, hists = generate_hist_dict_ensemble(noi_ts = noi_ts[:, (t-L):(t+1)], sources_ts = sources_ts[:, (t-L):t, :], num_symbols = alphabet_size)
 
-states_final = states_probs
+	df = alphabet_size - 1
 
-# print states_final
+	# Perform the hypothesis test:
+	#
+	#	   H0: Two distributions are equal
+	#	   H1: Two distributions are *not* equal
+	#
+	# at a level alpha
 
-state_seq = filter_states(noi_ts, sources_ts, hist_lookup, L = L)
+	alpha = 0.001
 
-state_props = numpy.bincount(state_seq)
+	# alpha = 0.001 # We set the size of the test, an upper bound on the
+				  #	probability of rejecting that two histories are in
+				  # the same equivalence class when they actually *are*.
+				  # That is, we fix an allowable Type I error.
+	
+	# Note: Setting alpha also fixes the Type II error, but 
+	# *does not* control it. That is, fixing alpha also
+	# fixes the probability that we *do not* reject that
+	# two states are in the same equivalence class, even
+	# when they *are in two* different equivalence classes.
+	#
+	# Thus, we have to balance between how often we don't
+	# merge when we should (which is controlled by alpha),
+	# and how much we do merge when we shouldn't (which
+	# is only controlled indirectly by alpha).
+	#
+	# For *too small* alpha, we'll end up merging too
+	# much. For *too large* alpha, we won't end up 
+	# merging enough.
+	
+	# Note: The test statistic associated with the chi-squared
+	# test is is only chi-squared *asymptotically*, since the
+	# sampling distribution result depends on the 
+	# central limit theorem. Thus, for small
+	# sample sizes, it is better to use Fisher's exact 
+	# test, which uses a test statistic whose sampling 
+	# distribution is known *exactly*, even for finite n.
 
-state_probs = state_props / float(numpy.sum(state_props))
+	# test_type = 'chisquared'
+	test_type = 'exact'
 
-print '\n\n'
+	states_counts, states_probs, hist_lookup = csmr(hists, alphabet_size, alpha = alpha, H_test = test_type)
 
-for state in states_counts:
-	for hist in state[0]:
-		print hist
+	states_final = states_probs
 
-	print state[1]
+	# print states_final
 
-	print '\n'
+	# Computing LSC with estimated states:
 
-print '\n\n'
+	state_seq = filter_states(noi_ts, sources_ts, hist_lookup, L = L)
 
-C = 0
+	state_props = numpy.bincount(state_seq)
 
-for prob in state_probs:
-	C += prob*numpy.log2(prob)
+	state_probs = state_props / float(numpy.sum(state_props))
 
-C = -C
+	print '\n\n'
 
-print 'The local statistical complexity is {}...'.format(C)
+	for state in states_counts:
+		for hist in state[0]:
+			print hist
 
-# print hist_dict
+		print state[1]
 
-# for hist in hist_dict:
-# 	count_0, count_1 = hist_dict[hist]
+		print '\n'
 
-# 	print hist, count_1/float(count_0 + count_1), count_0, count_1
+	print '\n\n'
+
+	C = 0
+
+	for prob in state_probs:
+		C += prob*numpy.log2(prob)
+
+	C = -C
+
+	# Perform the Miller-Maddow entropy correction,
+	# 	H_{MM} = H_{MLE} + (|X| - 1)/(2n)
+
+	Cs[t_ind] = C + (len(state_probs) - 1)/(2*len(state_seq))
+
+	print 'The local statistical complexity is {}...'.format(C)
+
+	# Compute LSC with the correct model.
+
+	state_seq = sources_ts[:, t, :].flatten()
+
+	state_props = numpy.bincount(state_seq)
+
+	state_probs = state_props / float(numpy.sum(state_props))
+
+	C = 0
+
+	for prob in state_probs:
+		C += prob*numpy.log2(prob)
+
+	C = -C
+
+	# Perform the Miller-Maddow entropy correction,
+	# 	H_{MM} = H_{MLE} + (|X| - 1)/(2n)
+
+	Cs_correct_model[t_ind] = C + (len(state_probs) - 1)/(2*len(state_seq))
+
+pylab.figure()
+pylab.plot(ts, Cs)
+pylab.show()
+
+with open('Cs-twitter_MM.dat', 'w') as wfile:
+	for C in Cs:
+		wfile.write('{}\n'.format(C))
+
+pylab.figure()
+pylab.plot(ts, Cs_correct_model)
+pylab.show()
+
+with open('Cs-twitter_MM_true.dat', 'w') as wfile:
+	for C in Cs_correct_model:
+		wfile.write('{}\n'.format(C))
