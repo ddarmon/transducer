@@ -38,7 +38,7 @@ line = ofile.readline()
 
 # Node of interest.
 
-noi = '0'
+noi = '1'
 
 # sources_ts contains all of the time series
 # for the inputs *into* a particular node (in
@@ -123,7 +123,7 @@ for t_ind, t in enumerate(ts):
 	#
 	# at a level alpha
 
-	alpha = 0.001
+	alpha = 0.1
 
 	# alpha = 0.001 # We set the size of the test, an upper bound on the
 				  #	probability of rejecting that two histories are in
@@ -164,11 +164,15 @@ for t_ind, t in enumerate(ts):
 
 	# Computing LSC with estimated states:
 
-	state_seq = filter_states(noi_ts, sources_ts, hist_lookup, L = L)
+	# state_seq = filter_states(noi_ts, sources_ts, hist_lookup, L = L)
+
+	# Only pass the current time slice of the ensemble.
+
+	state_seq = filter_states_ensemble(noi_ts[:, (t-L):(t+1)], sources_ts[:, (t-L):t, :], hist_lookup, L = L)
 
 	state_props = numpy.bincount(state_seq)
 
-	state_probs = state_props / float(numpy.sum(state_props))
+	state_probs = state_props[state_props != 0]/float(numpy.sum(state_props))
 
 	print '\n\n'
 
@@ -202,7 +206,7 @@ for t_ind, t in enumerate(ts):
 
 	state_props = numpy.bincount(state_seq)
 
-	state_probs = state_props / float(numpy.sum(state_props))
+	state_probs = state_props[state_props != 0]/float(numpy.sum(state_props))
 
 	C = 0
 

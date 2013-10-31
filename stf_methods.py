@@ -286,6 +286,31 @@ def filter_states(noi_ts, sources_ts, hist_lookup, L = 1):
 		state_seq.append(hist_lookup[cur_hist])
 	return state_seq
 
+def filter_states_ensemble(noi_ts, sources_ts, hist_lookup, L = 1):
+	# Returns the local causal states present during a single time
+	# slice using an *ensemble* of sample paths.
+
+	state_seq = []
+
+	N = noi_ts.shape[0] # The number of trials
+
+	for n in range(N):
+		future_symbol = noi_ts[n, -1]
+
+		cur_hist = []
+
+		cur_hist.append(tuple(noi_ts[n, 0:-1]))
+
+		for source_ind in range(sources_ts.shape[2]):
+			cur_hist.append(tuple(sources_ts[n, :, source_ind]))
+		
+		# Turn cur_hist from a list to a tuple.
+
+		cur_hist = tuple(cur_hist)
+		
+		state_seq.append(hist_lookup[cur_hist])
+	return state_seq
+
 def predict(noi_ts, sources_ts, hist_lookup, states_probs, L = 1):
 	# Predict the next symbol in the sequence using the 
 	# predictive distributions inferred from csmr.
