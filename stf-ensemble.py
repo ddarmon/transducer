@@ -18,8 +18,13 @@ import numpy
 import copy
 from collections import deque
 import ipdb
+import sys
 
 from stf_methods import *
+
+print '\n\n\nThis code isn\'t actually set up to work with ensembles. You need to modify generate_hist_dict to generate_hist_dict_ensemble and filter_states to filter_states_ensemble.\n\n\n\n'
+
+sys.exit(1)
 
 # numpy.random.seed(1) # Fix the random number generator so we get
 					   # reproducible results.
@@ -84,9 +89,12 @@ datatype = 'timeseries_synthetic/{}'.format(network_type)
 # a particular node (in the case of a spatio-
 # temporal random field).
 
+# Get the dimension of the timeseries,
+# i.e. (number of samples)x(number of timepoints).
+
 sample_count = 0
 
-with open('{}/sample{}.dat'.format(datatype, sources[0])) as ofile:
+with open('{}/sample{}.dat'.format(datatype, noi)) as ofile:
 	for line in ofile:
 		sample_count += 1
 
@@ -95,19 +103,22 @@ with open('{}/sample{}.dat'.format(datatype, sources[0])) as ofile:
 	else: # If we have an alphabet of size less than or equal to 10.
 		symbol_count = len(line.strip())
 
-sources_ts = numpy.zeros((sample_count, symbol_count, len(sources)), dtype = 'int16')
+if len(sources) == 0:
+	sources_ts = None
+else:
+	sources_ts = numpy.zeros((sample_count, symbol_count, len(sources)), dtype = 'int16')
 
-for source_index, source in enumerate(sources):
-	with open('{}/sample{}.dat'.format(datatype, source)) as ofile:
-		for sample_index, line in enumerate(ofile):
-			if ';' in line:
-				ts = line.strip()[:-1].split(';')
+	for source_index, source in enumerate(sources):
+		with open('{}/sample{}.dat'.format(datatype, source)) as ofile:
+			for sample_index, line in enumerate(ofile):
+				if ';' in line:
+					ts = line.strip()[:-1].split(';')
 
-				sources_ts[sample_index, :, source_index] = cur_ts[sample_index, :] = map(int, ts)
-			else:
-				ts = line.strip()
+					sources_ts[sample_index, :, source_index] = cur_ts[sample_index, :] = map(int, ts)
+				else:
+					ts = line.strip()
 
-				sources_ts[sample_index, :, source_index] = map(int, ts)
+					sources_ts[sample_index, :, source_index] = map(int, ts)
 
 # noi_ts contains the time series for the node that
 # we wish to predict.
