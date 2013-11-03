@@ -35,8 +35,12 @@ def generate_hist_dict(noi_ts, sources_ts, num_symbols, L = 1):
 
 		cur_hist.append(tuple(noi_ts[0, start:(start+L)]))
 
-		for source_ind in range(sources_ts.shape[2]):
-			cur_hist.append(tuple(sources_ts[0, start:(start+L), source_ind]))
+
+		if sources_ts == None:
+			pass
+		else:
+			for source_ind in range(sources_ts.shape[2]):
+				cur_hist.append(tuple(sources_ts[0, start:(start+L), source_ind]))
 		
 		# Turn cur_hist from a list to a tuple.
 
@@ -106,8 +110,11 @@ def generate_hist_dict_ensemble(noi_ts, sources_ts, num_symbols):
 
 		cur_hist.append(tuple(noi_ts[n, 0:-1]))
 
-		for source_ind in range(sources_ts.shape[2]):
-			cur_hist.append(tuple(sources_ts[n, :, source_ind]))
+		if sources_ts == None:
+			pass
+		else:
+			for source_ind in range(sources_ts.shape[2]):
+				cur_hist.append(tuple(sources_ts[n, :, source_ind]))
 		
 		# Turn cur_hist from a list to a tuple.
 
@@ -276,8 +283,12 @@ def filter_states(noi_ts, sources_ts, hist_lookup, L = 1):
 
 		cur_hist.append(tuple(noi_ts[0, start:(start+L)]))
 
-		for source_ind in range(sources_ts.shape[2]):
-			cur_hist.append(tuple(sources_ts[0, start:(start+L), source_ind]))
+
+		if sources_ts == None:
+			pass
+		else:			
+			for source_ind in range(sources_ts.shape[2]):
+				cur_hist.append(tuple(sources_ts[0, start:(start+L), source_ind]))
 		
 		# Turn cur_hist from a list to a tuple.
 
@@ -301,8 +312,11 @@ def filter_states_ensemble(noi_ts, sources_ts, hist_lookup, L = 1):
 
 		cur_hist.append(tuple(noi_ts[n, 0:-1]))
 
-		for source_ind in range(sources_ts.shape[2]):
-			cur_hist.append(tuple(sources_ts[n, :, source_ind]))
+		if sources_ts == None:
+			pass
+		else:
+			for source_ind in range(sources_ts.shape[2]):
+				cur_hist.append(tuple(sources_ts[n, :, source_ind]))
 		
 		# Turn cur_hist from a list to a tuple.
 

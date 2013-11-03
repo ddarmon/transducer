@@ -25,213 +25,210 @@ from stf_methods import *
 # numpy.random.seed(1) # Fix the random number generator so we get
 					   # reproducible results.
 
-adj_file = 'edge_list_3K_user_connected_directed.txt'
-# adj_file = 'adj_mat_toy.txt'
+for noi_ind in range(1682, 3000):
+	# Node of interest.
 
-ofile = open(adj_file)
+	noi = str(noi_ind)
 
-weighted = False
+	# sources_ts contains all of the time series
+	# for the inputs *into* a particular node (in
+	# the case of a transducer) or *adjacent to*
+	# a particular node (in the case of a spatio-
+	# temporal random field).
 
-ofile.readline()
+	datatype = 'timeseries_synthetic/twitter_p1_i2_ensemble'
+	# datatype = 'timeseries_synthetic/toy_transducer'
 
-line = ofile.readline()
+	source = '{}/input{}'.format(datatype, noi)
 
-# Node of interest.
+	sample_count = 0
 
-noi = '1'
+	with open('{}/sample{}.dat'.format(datatype, noi)) as ofile:
+		for line in ofile:
+			sample_count += 1
 
-# sources_ts contains all of the time series
-# for the inputs *into* a particular node (in
-# the case of a transducer) or *adjacent to*
-# a particular node (in the case of a spatio-
-# temporal random field).
+		if ';' in line: # If we have an alphabet of size greater than 10.
+			symbol_count = len(line.strip()[:-1].split(';'))
+		else: # If we have an alphabet of size less than or equal to 10.
+			symbol_count = len(line.strip())
 
-datatype = 'timeseries_synthetic/twitter_p1_i2_ensemble'
-# datatype = 'timeseries_synthetic/toy_transducer'
+	sources_ts = numpy.zeros((sample_count, symbol_count, 1), dtype = 'int16')
 
-source = '{}/input{}'.format(datatype, noi)
 
-sample_count = 0
+	try: # Some nodes have *no* input, and we must handle those.
+		with open('{}.dat'.format(source)) as ofile:
+			for sample_index, line in enumerate(ofile):
+				if ';' in line:
+					ts = line.strip()[:-1].split(';')
 
-with open('{}.dat'.format(source)) as ofile:
-	for line in ofile:
-		sample_count += 1
+					sources_ts[sample_index, :, 0] = map(int, ts)
+				else:
+					ts = line.strip()
 
-	if ';' in line: # If we have an alphabet of size greater than 10.
-		symbol_count = len(line.strip()[:-1].split(';'))
-	else: # If we have an alphabet of size less than or equal to 10.
-		symbol_count = len(line.strip())
+					sources_ts[sample_index, :, 0] = map(int, ts)
+	except IOError, e:
+		sources_ts = None
 
-sources_ts = numpy.zeros((sample_count, symbol_count, 1), dtype = 'int8')
 
-with open('{}.dat'.format(source)) as ofile:
-	for sample_index, line in enumerate(ofile):
-		if ';' in line:
-			ts = line.strip()[:-1].split(';')
+	# noi_ts contains the time series for the node that
+	# we wish to predict.
 
-			sources_ts[sample_index, :, 0] = map(int, ts)
+	noi_ts = numpy.zeros((sample_count, symbol_count), dtype = 'int16')
+
+	with open('{}/sample{}.dat'.format(datatype, noi)) as ofile:
+		for sample_index, line in enumerate(ofile):
+			if sample_index == sample_count:
+				break # We have more samples for noi than for the input
+					  # so we stop.
+
+			if ';' in line:
+				ts = line.strip()[:-1].split(';')
+
+				noi_ts[sample_index, :] = map(int, ts)
+			else:
+				ts = line.strip()
+
+				noi_ts[sample_index, :] = map(int, ts)
+
+	L = 1 # The past to consider
+
+	alphabet_size = 2 # The number of possible symbols
+
+	# hist_dict, hists = generate_hist_dict(noi_ts = noi_ts, sources_ts = sources_ts, num_symbols = alphabet_size, L = L)
+
+	ts = range(L, noi_ts.shape[1])
+	# ts = range(L, L+1)
+
+	Cs = numpy.zeros(len(ts))
+
+	Cs_correct_model = numpy.zeros(len(ts))
+
+	for t_ind, t in enumerate(ts):
+		print 'At time index {} of {}...'.format(t, ts[-1])
+
+		if sources_ts == None:
+			hist_dict, hists = generate_hist_dict_ensemble(noi_ts = noi_ts[:, (t-L):(t+1)], sources_ts = sources_ts, num_symbols = alphabet_size)
 		else:
-			ts = line.strip()
+			hist_dict, hists = generate_hist_dict_ensemble(noi_ts = noi_ts[:, (t-L):(t+1)], sources_ts = sources_ts[:, (t-L):t, :], num_symbols = alphabet_size)
 
-			sources_ts[sample_index, :, 0] = numpy.fromstring(ts, dtype = 'int8') - 48
+		
 
+		df = alphabet_size - 1
 
-# noi_ts contains the time series for the node that
-# we wish to predict.
+		# Perform the hypothesis test:
+		#
+		#	   H0: Two distributions are equal
+		#	   H1: Two distributions are *not* equal
+		#
+		# at a level alpha
 
-noi_ts = numpy.zeros((sample_count, symbol_count), dtype = 'int8')
+		alpha = 0.1
 
-with open('{}/sample{}.dat'.format(datatype, noi)) as ofile:
-	for sample_index, line in enumerate(ofile):
-		if sample_index == sample_count:
-			break # We have more samples for noi than for the input
-				  # so we stop.
+		# alpha = 0.001 # We set the size of the test, an upper bound on the
+					  #	probability of rejecting that two histories are in
+					  # the same equivalence class when they actually *are*.
+					  # That is, we fix an allowable Type I error.
+		
+		# Note: Setting alpha also fixes the Type II error, but 
+		# *does not* control it. That is, fixing alpha also
+		# fixes the probability that we *do not* reject that
+		# two states are in the same equivalence class, even
+		# when they *are in two* different equivalence classes.
+		#
+		# Thus, we have to balance between how often we don't
+		# merge when we should (which is controlled by alpha),
+		# and how much we do merge when we shouldn't (which
+		# is only controlled indirectly by alpha).
+		#
+		# For *too small* alpha, we'll end up merging too
+		# much. For *too large* alpha, we won't end up 
+		# merging enough.
+		
+		# Note: The test statistic associated with the chi-squared
+		# test is is only chi-squared *asymptotically*, since the
+		# sampling distribution result depends on the 
+		# central limit theorem. Thus, for small
+		# sample sizes, it is better to use Fisher's exact 
+		# test, which uses a test statistic whose sampling 
+		# distribution is known *exactly*, even for finite n.
 
-		if ';' in line:
-			ts = line.strip()[:-1].split(';')
+		# test_type = 'chisquared'
+		test_type = 'exact'
 
-			noi_ts[sample_index, :] = map(int, ts)
+		states_counts, states_probs, hist_lookup = csmr(hists, alphabet_size, alpha = alpha, H_test = test_type)
+
+		states_final = states_probs
+
+		# print states_final
+
+		# Computing LSC with estimated states:
+
+		# state_seq = filter_states(noi_ts, sources_ts, hist_lookup, L = L)
+
+		# Only pass the current time slice of the ensemble.
+
+		if sources_ts == None:
+			state_seq = filter_states_ensemble(noi_ts[:, (t-L):(t+1)], sources_ts, hist_lookup, L = L)
 		else:
-			ts = line.strip()
+			state_seq = filter_states_ensemble(noi_ts[:, (t-L):(t+1)], sources_ts[:, (t-L):t, :], hist_lookup, L = L)
 
-			noi_ts[sample_index, :] = numpy.fromstring(ts, dtype = 'int8') - 48
+		state_props = numpy.bincount(state_seq)
 
-L = 1 # The past to consider
+		state_probs = state_props[state_props != 0]/float(numpy.sum(state_props))
 
-alphabet_size = 2 # The number of possible symbols
+		print '\n\n'
 
-# hist_dict, hists = generate_hist_dict(noi_ts = noi_ts, sources_ts = sources_ts, num_symbols = alphabet_size, L = L)
+		for state in states_counts:
+			for hist in state[0]:
+				print hist
 
-ts = range(L, noi_ts.shape[1])
-# ts = range(L, L+1)
+			print state[1]
 
-Cs = numpy.zeros(len(ts))
+			print '\n'
 
-Cs_correct_model = numpy.zeros(len(ts))
+		print '\n\n'
 
-for t_ind, t in enumerate(ts):
-	print 'At time index {} of {}...'.format(t, ts[-1])
+		C = 0
 
-	hist_dict, hists = generate_hist_dict_ensemble(noi_ts = noi_ts[:, (t-L):(t+1)], sources_ts = sources_ts[:, (t-L):t, :], num_symbols = alphabet_size)
+		for prob in state_probs:
+			C += prob*numpy.log2(prob)
 
-	df = alphabet_size - 1
+		C = -C
 
-	# Perform the hypothesis test:
-	#
-	#	   H0: Two distributions are equal
-	#	   H1: Two distributions are *not* equal
-	#
-	# at a level alpha
+		# Perform the Miller-Maddow entropy correction,
+		# 	H_{MM} = H_{MLE} + (|X| - 1)/(2n)
 
-	alpha = 0.1
+		Cs[t_ind] = C + (len(state_probs) - 1)/(2*len(state_seq))
 
-	# alpha = 0.001 # We set the size of the test, an upper bound on the
-				  #	probability of rejecting that two histories are in
-				  # the same equivalence class when they actually *are*.
-				  # That is, we fix an allowable Type I error.
-	
-	# Note: Setting alpha also fixes the Type II error, but 
-	# *does not* control it. That is, fixing alpha also
-	# fixes the probability that we *do not* reject that
-	# two states are in the same equivalence class, even
-	# when they *are in two* different equivalence classes.
-	#
-	# Thus, we have to balance between how often we don't
-	# merge when we should (which is controlled by alpha),
-	# and how much we do merge when we shouldn't (which
-	# is only controlled indirectly by alpha).
-	#
-	# For *too small* alpha, we'll end up merging too
-	# much. For *too large* alpha, we won't end up 
-	# merging enough.
-	
-	# Note: The test statistic associated with the chi-squared
-	# test is is only chi-squared *asymptotically*, since the
-	# sampling distribution result depends on the 
-	# central limit theorem. Thus, for small
-	# sample sizes, it is better to use Fisher's exact 
-	# test, which uses a test statistic whose sampling 
-	# distribution is known *exactly*, even for finite n.
+		print 'The local statistical complexity is {}...'.format(C)
 
-	# test_type = 'chisquared'
-	test_type = 'exact'
+		# Compute LSC with the correct model.
 
-	states_counts, states_probs, hist_lookup = csmr(hists, alphabet_size, alpha = alpha, H_test = test_type)
+		if sources_ts == None:
+			Cs_correct_model[t_ind] = 0
+		else:			
+			state_seq = sources_ts[:, t, :].flatten()
 
-	states_final = states_probs
+			state_props = numpy.bincount(state_seq)
 
-	# print states_final
+			state_probs = state_props[state_props != 0]/float(numpy.sum(state_props))
 
-	# Computing LSC with estimated states:
+			C = 0
 
-	# state_seq = filter_states(noi_ts, sources_ts, hist_lookup, L = L)
+			for prob in state_probs:
+				C += prob*numpy.log2(prob)
 
-	# Only pass the current time slice of the ensemble.
+			C = -C
 
-	state_seq = filter_states_ensemble(noi_ts[:, (t-L):(t+1)], sources_ts[:, (t-L):t, :], hist_lookup, L = L)
+			# Perform the Miller-Maddow entropy correction,
+			# 	H_{MM} = H_{MLE} + (|X| - 1)/(2n)
 
-	state_props = numpy.bincount(state_seq)
+			Cs_correct_model[t_ind] = C + (len(state_probs) - 1)/(2*len(state_seq))
 
-	state_probs = state_props[state_props != 0]/float(numpy.sum(state_props))
+	with open('Cs-twitter_MM_n{}.dat'.format(noi), 'w') as wfile:
+		for C in Cs:
+			wfile.write('{}\n'.format(C))
 
-	print '\n\n'
-
-	for state in states_counts:
-		for hist in state[0]:
-			print hist
-
-		print state[1]
-
-		print '\n'
-
-	print '\n\n'
-
-	C = 0
-
-	for prob in state_probs:
-		C += prob*numpy.log2(prob)
-
-	C = -C
-
-	# Perform the Miller-Maddow entropy correction,
-	# 	H_{MM} = H_{MLE} + (|X| - 1)/(2n)
-
-	Cs[t_ind] = C + (len(state_probs) - 1)/(2*len(state_seq))
-
-	print 'The local statistical complexity is {}...'.format(C)
-
-	# Compute LSC with the correct model.
-
-	state_seq = sources_ts[:, t, :].flatten()
-
-	state_props = numpy.bincount(state_seq)
-
-	state_probs = state_props[state_props != 0]/float(numpy.sum(state_props))
-
-	C = 0
-
-	for prob in state_probs:
-		C += prob*numpy.log2(prob)
-
-	C = -C
-
-	# Perform the Miller-Maddow entropy correction,
-	# 	H_{MM} = H_{MLE} + (|X| - 1)/(2n)
-
-	Cs_correct_model[t_ind] = C + (len(state_probs) - 1)/(2*len(state_seq))
-
-pylab.figure()
-pylab.plot(ts, Cs)
-pylab.show()
-
-with open('Cs-twitter_MM.dat', 'w') as wfile:
-	for C in Cs:
-		wfile.write('{}\n'.format(C))
-
-pylab.figure()
-pylab.plot(ts, Cs_correct_model)
-pylab.show()
-
-with open('Cs-twitter_MM_true.dat', 'w') as wfile:
-	for C in Cs_correct_model:
-		wfile.write('{}\n'.format(C))
+	with open('Cs-twitter_MM_true_n{}.dat'.format(noi), 'w') as wfile:
+		for C in Cs_correct_model:
+			wfile.write('{}\n'.format(C))

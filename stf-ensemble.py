@@ -95,7 +95,7 @@ with open('{}/sample{}.dat'.format(datatype, sources[0])) as ofile:
 	else: # If we have an alphabet of size less than or equal to 10.
 		symbol_count = len(line.strip())
 
-sources_ts = numpy.zeros((sample_count, symbol_count, len(sources)), dtype = 'int8')
+sources_ts = numpy.zeros((sample_count, symbol_count, len(sources)), dtype = 'int16')
 
 for source_index, source in enumerate(sources):
 	with open('{}/sample{}.dat'.format(datatype, source)) as ofile:
@@ -107,12 +107,12 @@ for source_index, source in enumerate(sources):
 			else:
 				ts = line.strip()
 
-				sources_ts[sample_index, :, source_index] = numpy.fromstring(ts, dtype = 'int8') - 48
+				sources_ts[sample_index, :, source_index] = map(int, ts)
 
 # noi_ts contains the time series for the node that
 # we wish to predict.
 
-noi_ts = numpy.zeros((sample_count, symbol_count), dtype = 'int8')
+noi_ts = numpy.zeros((sample_count, symbol_count), dtype = 'int16')
 
 with open('{}/sample{}.dat'.format(datatype, noi)) as ofile:
 	for sample_index, line in enumerate(ofile):
@@ -123,7 +123,7 @@ with open('{}/sample{}.dat'.format(datatype, noi)) as ofile:
 		else:
 			ts = line.strip()
 
-			noi_ts[sample_index, :] = numpy.fromstring(ts, dtype = 'int8') - 48
+			noi_ts[sample_index, :] = map(int, ts)
 
 L = 1 # The past to consider
 

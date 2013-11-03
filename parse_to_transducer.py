@@ -29,8 +29,8 @@ adj_file = 'edge_list_3K_user_connected_directed.txt'
 # datatype = 'timeseries_synthetic/toy_transducer'
 datatype = 'timeseries_synthetic/twitter_p1_i2_ensemble'
 
-# for noi_ind in range(5):
-for noi_ind in ['0']:
+for noi_ind in range(0, 2786):
+# for noi_ind in ['0']:
 	# Node of interest.
 
 	noi = str(noi_ind)
@@ -88,7 +88,7 @@ for noi_ind in ['0']:
 
 		sample_count = 0
 
-		with open('{}/sample{}.dat'.format(datatype, sources[0])) as ofile:
+		with open('{}/sample{}.dat'.format(datatype, noi)) as ofile:
 			for line in ofile:
 				sample_count += 1
 
@@ -104,6 +104,11 @@ for noi_ind in ['0']:
 		for source_index, source in enumerate(sources):
 			with open('{}/sample{}.dat'.format(datatype, source)) as ofile:
 				for sample_index, line in enumerate(ofile):
+					if sample_index == sample_count: # Stop including samples after you've reached
+													 # the same number of samples as the noi
+													 # timeseries.
+						break
+
 					if ';' in line:
 						ts = line.strip()[:-1].split(';')
 

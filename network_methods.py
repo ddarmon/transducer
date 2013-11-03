@@ -73,10 +73,10 @@ def get_adjacency_to_weight(fname):
 		weight = 0.
 
 		# adj_matrix_out takes node_id and outputs the nodes that
-		# node points to.
+		# node_id points to.
 
 		# adj_matrix_in  takes node_id and outputs the nodes that
-		# point *to* that node.
+		# point *to* node_id.
 
 		adj_matrix_out[int(from_ind)].append([int(to_ind), float(weight)])
 		adj_matrix_in[int(to_ind)].append(from_ind)
