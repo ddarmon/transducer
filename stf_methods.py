@@ -330,18 +330,26 @@ def predict(noi_ts, sources_ts, hist_lookup, states_probs, L = 1):
 	# Predict the next symbol in the sequence using the 
 	# predictive distributions inferred from csmr.
 
-	n = len(noi_ts)
+	n = noi_ts.shape[1]
 
-	prediction = ''
+	prediction = numpy.zeros(n - L)
 
 	for start in range(0, n - L):
-		cur_string = ''
+		cur_hist = []
 
-		for source_ind in range(len(sources_ts)):
-			cur_string += sources_ts[source_ind][start:(start+L)]
+		cur_hist.append(tuple(noi_ts[0, start:(start+L)]))
 
-		cur_string += noi_ts[start:(start+L)]
+
+		if sources_ts == None:
+			pass
+		else:			
+			for source_ind in range(sources_ts.shape[2]):
+				cur_hist.append(tuple(sources_ts[0, start:(start+L), source_ind]))
 		
-		prediction += str(numpy.argmax(states_probs[hist_lookup[cur_string]][1]))
+		# Turn cur_hist from a list to a tuple.
+
+		cur_hist = tuple(cur_hist)
+		
+		prediction[start] = numpy.argmax(states_probs[hist_lookup[cur_hist]][1])
 
 	return prediction

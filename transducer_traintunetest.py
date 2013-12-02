@@ -22,24 +22,14 @@ from filter_data_methods import *
 # numpy.random.seed(1) # Fix the random number generator so we get
                        # reproducible results.
 
-print '\n\n\n\n\n\nWARNING!!! This does not currently handle input symbols with more than 0..9 ... \n\n\n\n\n'
-
-adj_file = 'edge_list_3K_user_connected_directed.txt'
-# adj_file = 'adj_mat_toy.txt'
-
-ofile = open(adj_file)
-
-weighted = False
-
-ofile.readline()
-
-line = ofile.readline()
-
 # Node of interest.
 
-noi = '17'
+noi = '1'
 
 L = 1
+L_CSSR = L
+L_max  = L_CSSR
+
 
 # sources_ts contains all of the time series
 # for the inputs *into* a particular node (in
@@ -47,27 +37,39 @@ L = 1
 # a particular node (in the case of a spatio-
 # temporal random field).
 
-# datatype = 'timeseries_synthetic/toy_transducer'
-datatype = 'timeseries_synthetic/twitter_p1_i2'
+datatype = 'timeseries_synthetic/toy_transducer'
+# datatype = 'timeseries_synthetic/twitter_p1_i2'
 
-source = glob.glob('{}/input{}.dat'.format(datatype, noi))
-sources_ts = []
+source = '{}/input{}'.format(datatype, noi)
 
-if len(source) == 0: # the node has no input:
-  pass
-else:
-  with open('{}'.format(source[0])) as ofile:
-      sources_ts.append(ofile.readline().rstrip('\n'))
+with open('{}.dat'.format(source)) as ofile:
+  line = ofile.readline()
+
+  if ';' in line:
+    ts = line.strip()[:-1].split(';')
+
+    sources_ts = numpy.array(map(int, ts))[numpy.newaxis, :, numpy.newaxis]
+  else:
+    ts = line.strip()
+
+    sources_ts = numpy.array(map(int, ts))[numpy.newaxis, :, numpy.newaxis]
 
 # noi_ts contains the time series for the node that
 # we wish to predict.
 
 with open('{}/sample{}.dat'.format(datatype, noi)) as ofile:
-    noi_ts = ofile.readline().rstrip('\n')
+  line = ofile.readline()
 
-n = len(noi_ts)
+  if ';' in line:
+    ts = line.strip()[:-1].split(';')
 
-ofile.close()
+    noi_ts = numpy.array(map(int, ts))[numpy.newaxis, :]
+  else:
+    ts = line.strip()
+
+    noi_ts = numpy.array(map(int, ts))[numpy.newaxis, :]
+
+n = noi_ts.shape[1]
 
 num_symbols = 2 # The number of possible symbols
 
@@ -83,9 +85,9 @@ df = num_symbols - 1
 # at a level alpha
 
 
-alpha = 0.001
+alpha = 0.05
 
-states_counts, states_probs, hist_lookup = csmr(hists, num_symbols, alpha = 0.001)
+states_counts, states_probs, hist_lookup = csmr(hists, num_symbols, alpha = alpha)
 
 states_final = states_probs
 
@@ -107,13 +109,13 @@ prediction = predict(noi_ts, sources_ts, hist_lookup, states_probs, L = L)
 correct = 0
 base_rate = 0
 
-if numpy.mean(numpy.fromstring(noi_ts, dtype = 'int8') - 48) < 0.5:
-    majority_vote = '0'
+if numpy.mean(noi_ts) < 0.5:
+    majority_vote = 0
 else:
-    majority_vote = '1'
+    majority_vote = 1
 
 for ind in range(len(prediction)):
-    true = noi_ts[L+ind]
+    true = noi_ts[0, L+ind]
     pred = prediction[ind]
 
     if true == pred:
@@ -126,9 +128,6 @@ for ind in range(len(prediction)):
 
 print 'Accuracy rate: {}...'.format(float(correct)/len(prediction))
 print 'Compared to using a biased coin {}...'.format(numpy.max((float(base_rate)/len(prediction), 1 - float(base_rate)/len(prediction))))
-
-L_CSSR = L
-L_max  = L_CSSR
 
 metric = 'accuracy'
 
@@ -148,10 +147,3 @@ states, L = get_equivalence_classes(fname) # A dictionary structure with the ord
 correct_rates = run_tests(fname = fname, CSM = CSM, zero_order_CSM = zero_order_predict, states = states, epsilon_machine = epsilon_machine, L = L_CSSR, L_max = L_max, metric = metric, print_predictions = False, print_state_series = False)
 
 print 'Compared to using CSSR on the timeseries {}...'.format(correct_rates[0])
-
-print hist_dict
-
-for hist in hist_dict:
-  count_0, count_1 = hist_dict[hist]
-
-  print hist, count_1/float(count_0 + count_1), count_0, count_1
