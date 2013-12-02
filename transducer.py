@@ -17,22 +17,9 @@ from stf_methods import *
 # numpy.random.seed(1) # Fix the random number generator so we get
 					   # reproducible results.
 
-print '\n\n\n\n\n\nWARNING!!! This does not currently handle input symbols with more than 0..9 ... \n\n\n\n\n'
-
-adj_file = 'edge_list_3K_user_connected_directed.txt'
-# adj_file = 'adj_mat_toy.txt'
-
-ofile = open(adj_file)
-
-weighted = False
-
-ofile.readline()
-
-line = ofile.readline()
-
 # Node of interest.
 
-noi = '17'
+noi = '1'
 
 # sources_ts contains all of the time series
 # for the inputs *into* a particular node (in
@@ -40,24 +27,39 @@ noi = '17'
 # a particular node (in the case of a spatio-
 # temporal random field).
 
-datatype = 'timeseries_synthetic/twitter_p1_i2'
-# datatype = 'timeseries_synthetic/toy_transducer'
+# datatype = 'timeseries_synthetic/twitter_p1_i2'
+datatype = 'timeseries_synthetic/toy_transducer'
 
 source = '{}/input{}'.format(datatype, noi)
-sources_ts = []
 
 with open('{}.dat'.format(source)) as ofile:
-	sources_ts.append(ofile.readline().rstrip('\n'))
+	line = ofile.readline()
+
+	if ';' in line:
+		ts = line.strip()[:-1].split(';')
+
+		sources_ts = numpy.array(map(int, ts))[numpy.newaxis, :, numpy.newaxis]
+	else:
+		ts = line.strip()
+
+		sources_ts = numpy.array(map(int, ts))[numpy.newaxis, :, numpy.newaxis]
 
 # noi_ts contains the time series for the node that
 # we wish to predict.
 
 with open('{}/sample{}.dat'.format(datatype, noi)) as ofile:
-	noi_ts = ofile.readline().rstrip('\n')
+	line = ofile.readline()
 
-n = len(noi_ts)
+	if ';' in line:
+		ts = line.strip()[:-1].split(';')
 
-ofile.close()
+		noi_ts = numpy.array(map(int, ts))[numpy.newaxis, :]
+	else:
+		ts = line.strip()
+
+		noi_ts = numpy.array(map(int, ts))[numpy.newaxis, :]
+
+n = noi_ts.shape[1]
 
 L = 1 # The past to consider
 
@@ -74,11 +76,12 @@ df = num_symbols - 1
 #
 # at a level alpha
 
-alpha = 0.001
+alpha = 0.05
 
 test_type = 'chisquared'
+# test_type = 'exact'
 
-states_counts, states_probs, hist_lookup = csmr(hists, num_symbols, alpha = 0.001, H_test = test_type)
+states_counts, states_probs, hist_lookup = csmr(hists, num_symbols, alpha = alpha, H_test = test_type)
 
 states_final = states_probs
 
@@ -99,7 +102,14 @@ C = -C
 
 print 'The local statistical complexity is {}...'.format(C)
 
-# print hist_dict
+for state_ind, state in enumerate(states_final):
+	print '\nState {}\n========'.format(state_ind)
+	enum_hists, enum_probs = state
+
+	for hist in enum_hists:
+		print hist
+
+	print enum_probs
 
 # for hist in hist_dict:
 # 	count_0, count_1 = hist_dict[hist]

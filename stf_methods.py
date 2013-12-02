@@ -180,7 +180,8 @@ def chisquared_test(state1, state2, df, alpha = 0.001):
 def exact_test(state1, state2, alpha = 0.001):
 	# Perform Fisher's exact test.
 
-	print 'Warning: The Exact test currently assumes a *two symbol* alphabet.'
+	if len(state1) > 2:
+		print 'Warning: The Exact test currently assumes a *two symbol* alphabet.'
 	
 	c00, c01 = state1[1]
 	c10, c11 = state2[1]

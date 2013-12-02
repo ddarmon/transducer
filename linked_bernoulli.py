@@ -15,12 +15,12 @@ from network_methods import *
 # The amplitude of the base rate, from
 # 0 to lam_max.
 
-p_max = 0.1
+p_max = 0.0002
 
 # Loop until we've reached the appropriate amount of 
 # time.
 
-T_final = 100
+T_final = 1000
 
 # Loop until we've run the appropriate number of trials.
 
@@ -32,14 +32,14 @@ num_trials = 1000
 # adj_matrix_out = {0 : [(1, uniform_weight), (2, uniform_weight), (3, uniform_weight), (4, uniform_weight), (5, 0.005)], 5 : [(6, uniform_weight), (7, uniform_weight), (8, uniform_weight), (0, 0.005)]}
 
 # network_type = 'toy_transducer'
-network_type = 'twitter_p1_i2_ensemble'
+network_type = 'twitter_p0002_i1p0_ensemble'
 
 # adj_mat_fname = 'adj_mat_toy.txt'
 adj_mat_fname = 'edge_list_3K_user_connected_directed.txt'
 
 adj_matrix_out, adj_matrix_in, Nv = get_adjacency_to_weight(adj_mat_fname)
 
-scale_weights = 0.2 # How much to scale the influence weights by
+scale_weights = 1 # How much to scale the influence weights by
 
 #
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
