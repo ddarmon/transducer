@@ -42,17 +42,20 @@ datatype = 'timeseries_synthetic/toy_transducer'
 
 source = '{}/input{}'.format(datatype, noi)
 
-with open('{}.dat'.format(source)) as ofile:
-  line = ofile.readline()
+try: # Some nodes have *no* input, and we must handle those.
+  with open('{}.dat'.format(source)) as ofile:
+    line = ofile.readline()
 
-  if ';' in line:
-    ts = line.strip()[:-1].split(';')
+    if ';' in line:
+      ts = line.strip()[:-1].split(';')
 
-    sources_ts = numpy.array(map(int, ts))[numpy.newaxis, :, numpy.newaxis]
-  else:
-    ts = line.strip()
+      sources_ts = numpy.array(map(int, ts))[numpy.newaxis, :, numpy.newaxis]
+    else:
+      ts = line.strip()
 
-    sources_ts = numpy.array(map(int, ts))[numpy.newaxis, :, numpy.newaxis]
+      sources_ts = numpy.array(map(int, ts))[numpy.newaxis, :, numpy.newaxis]
+except IOError, e:
+  sources_ts = None 
 
 # noi_ts contains the time series for the node that
 # we wish to predict.
@@ -147,3 +150,19 @@ states, L = get_equivalence_classes(fname) # A dictionary structure with the ord
 correct_rates = run_tests(fname = fname, CSM = CSM, zero_order_CSM = zero_order_predict, states = states, epsilon_machine = epsilon_machine, L = L_CSSR, L_max = L_max, metric = metric, print_predictions = False, print_state_series = False)
 
 print 'Compared to using CSSR on the timeseries {}...'.format(correct_rates[0])
+
+for state_ind, state in enumerate(states_final):
+  print '\nState {}\n========'.format(state_ind)
+  enum_hists, enum_probs = state
+
+  for hist in enum_hists:
+    print hist
+
+  print enum_probs
+
+print '\n\n\n\n'
+
+for hist in hist_dict:
+  count_0, count_1 = hist_dict[hist]
+
+  print hist, count_1/float(count_0 + count_1), count_0, count_1
